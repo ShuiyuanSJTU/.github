@@ -1,0 +1,16 @@
+{
+    "tests":{
+        "requiredPlugins": [
+            "https://github.com/ShuiyuanSJTU/discourse-omniauth-jaccount.git",
+            "https://github.com/ShuiyuanSJTU/chinese-search.git",
+            "https://github.com/ShuiyuanSJTU/retort.git",
+            "https://github.com/ShuiyuanSJTU/continous-days-visited.git",
+            "https://github.com/ShuiyuanSJTU/enhanced-ignore.git",
+            "https://github.com/ShuiyuanSJTU/optimized-privilege.git",
+            "https://github.com/ShuiyuanSJTU/remake-limit.git",
+            "https://github.com/ShuiyuanSJTU/discourse-onebox-weibo.git",
+            "https://github.com/ShuiyuanSJTU/discourse-no-bump.git",
+            "https://github.com/ShuiyuanSJTU/discourse-image-enhancement.git"
+        ]
+    }
+}
