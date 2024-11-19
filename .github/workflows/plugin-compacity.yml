@@ -92,7 +92,7 @@ jobs:
         uses: discourse/.github/actions/clone-additional-plugins@v1
         with:
           ssh_private_key: ${{ secrets.ssh_private_key || '' }}
-          about_json_path: plugins.json
+          about_json_path: tmp/plugins.json
 
       - name: Start redis
         run: |
