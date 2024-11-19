@@ -77,7 +77,8 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
-      - uses: actions/checkout@v4
+      - name: Clone Discourse
+        uses: actions/checkout@v4
         with:
           repository: discourse/discourse
           fetch-depth: 1
@@ -88,11 +89,17 @@ jobs:
           git config --global user.email "ci@ci.invalid"
           git config --global user.name "Discourse CI"
 
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          path: tmp/
+          fetch-depth: 1
+
       - name: Clone plugins
         uses: discourse/.github/actions/clone-additional-plugins@v1
         with:
           ssh_private_key: ${{ secrets.ssh_private_key || '' }}
-          about_json_path: plugins.json
+          about_json_path: tmp/plugins.json
 
       - name: Start redis
         run: |
