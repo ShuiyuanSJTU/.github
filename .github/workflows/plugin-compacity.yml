@@ -88,7 +88,7 @@ jobs:
         run: |
           for plugin_dir in plugins/*; do
             if [ -d "$plugin_dir" ]; then
-              rm -rf "$plugin_dir/tests" || true
+              rm -rf "$plugin_dir/test" || true
               rm -rf "$plugin_dir/spec" || true
             fi
           done
