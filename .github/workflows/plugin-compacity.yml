@@ -256,7 +256,7 @@ jobs:
 
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
-        run: QUNIT_WRITE_EXECUTION_FILE=1 QUNIT_PARALLEL=1 bin/rake plugin:qunit['*','1200000']
+        run: QUNIT_WRITE_EXECUTION_FILE=1 QUNIT_PARALLEL=2 bin/rake plugin:qunit['*','1200000']
         timeout-minutes: 30
 
       - name: Ember Build for System Tests
