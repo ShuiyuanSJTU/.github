@@ -84,6 +84,15 @@ jobs:
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
+      - name: Delete tests of official plugins
+        run: |
+          for plugin_dir in plugins/*; do
+            if [ -d "$plugin_dir" ]; then
+              rm -rf "$plugin_dir/tests" || true
+              rm -rf "$plugin_dir/spec" || true
+            fi
+          done
+
       - name: Setup Git
         run: |
           git config --global user.email "ci@ci.invalid"
