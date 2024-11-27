@@ -77,16 +77,32 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
-      - uses: actions/checkout@v4
+      - name: Clone Discourse
+        uses: actions/checkout@v4
         with:
           repository: discourse/discourse
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
+      - name: Delete tests of official plugins
+        run: |
+          for plugin_dir in plugins/*; do
+            if [ -d "$plugin_dir" ]; then
+              rm -rf "$plugin_dir/test" || true
+              rm -rf "$plugin_dir/spec" || true
+            fi
+          done
+
       - name: Setup Git
         run: |
           git config --global user.email "ci@ci.invalid"
           git config --global user.name "Discourse CI"
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          path: tmp/
+          fetch-depth: 1
 
       - name: Clone plugins
         uses: discourse/.github/actions/clone-additional-plugins@v1
@@ -240,7 +256,7 @@ jobs:
 
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
-        run: QUNIT_WRITE_EXECUTION_FILE=1 QUNIT_PARALLEL=3 bin/rake plugin:qunit['*','1200000']
+        run: QUNIT_WRITE_EXECUTION_FILE=1 QUNIT_PARALLEL=2 bin/rake plugin:qunit['*','1200000']
         timeout-minutes: 30
 
       - name: Ember Build for System Tests
