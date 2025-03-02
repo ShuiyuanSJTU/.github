@@ -1,0 +1,58 @@
+name: Update dependencies and configuration files
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update_files:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v3
+
+    - name: Pull template repository
+      run: |
+        git clone https://github.com/discourse/discourse-plugin-skeleton template-repo
+
+    - name: Check for updates in dependency and configuration files
+      id: check_updates
+      run: |
+        files_to_check=(
+          "eslint.config.mjs"
+          ".npmrc"
+          ".prettierrc.cjs"
+          ".rubocop.yml"
+          ".streerc"
+          ".template-lintrc.cjs"
+          "Gemfile"
+          "Gemfile.lock"
+          "package.json"
+          "pnpm-lock.yaml"
+        )
+        updates_found=false
+        for file in "${files_to_check[@]}"; do
+          if [ ! -f $file ] || ! diff -q template-repo/$file $file > /dev/null 2>&1; then
+            echo "$file has updates or is missing"
+            updates_found=true
+            cp template-repo/$file $file
+          fi
+        done
+        echo "updates_found=$updates_found" >> $GITHUB_ENV
+
+    - name: Clean up template repository
+      run: rm -rf template-repo
+
+    - name: Create a pull request
+      if: env.updates_found == 'true'
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+        commit-message: Update dependencies and configuration files
+        branch: bot/update-dependencies
+        title: Update dependencies and configuration files
+        body: This PR updates the dependencies and configuration files based on the latest template.
