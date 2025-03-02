@@ -274,7 +274,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Upload failed system test screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-screenshots
