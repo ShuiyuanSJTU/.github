@@ -27,8 +27,8 @@ jobs:
     - name: Generate discourse-plugin.yml
       run: python scripts/generate_discourse_plugin_yml.py upstream/.github/workflows/discourse-plugin.yml .github/workflows/discourse-plugin.yml
 
-    - name: Generate plugin-compacity.yml
-      run: python scripts/generate_plugin_compacity_yml.py upstream/.github/workflows/discourse-plugin.yml .github/workflows/plugin-compacity.yml
+    - name: Generate plugin-compatibility.yml
+      run: python scripts/generate_plugin_compacity_yml.py upstream/.github/workflows/discourse-plugin.yml .github/workflows/plugin-compatibility.yml
 
     - name: Add commit SHA to generated workflows
       run: |
@@ -36,7 +36,7 @@ jobs:
         GENERATOR_SHA=$(git log -1 --pretty=format:"%H" -- scripts/generate_*_yml.py .github/workflows/generate-workflows.yml)
         MESSAGE="# Generated from https://github.com/discourse/.github/blob/$UPSTREAM_SHA/.github/workflows/discourse-plugin.yml\n# Generator version: $GENERATOR_SHA\n\n"
         printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat .github/workflows/discourse-plugin.yml)" > .github/workflows/discourse-plugin.yml
-        printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat .github/workflows/plugin-compacity.yml)" > .github/workflows/plugin-compacity.yml
+        printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat .github/workflows/plugin-compatibility.yml)" > .github/workflows/plugin-compatibility.yml
 
     - name: Clean up before commit
       run: rm -rf upstream

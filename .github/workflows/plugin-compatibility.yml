@@ -1,7 +1,7 @@
 # Generated from https://github.com/discourse/.github/blob/d1cf59cdd92fca6ad16fc792f22d447dd9589e01/.github/workflows/discourse-plugin.yml
 # Generator version: 50ba64b0ab7895e894453db3ffa625ead17cae46
 
-name: Discourse Plugin
+name: Plugin Compatibility
 
 on:
   workflow_dispatch:

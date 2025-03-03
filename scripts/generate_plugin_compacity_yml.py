@@ -16,6 +16,8 @@ yaml.indent(mapping=2, sequence=4, offset=2)
 
 data = yaml.load(source)
 
+data["name"] = "Plugin Compatibility"
+
 # override on
 injection = """
   workflow_dispatch:
