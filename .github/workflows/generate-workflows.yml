@@ -1,0 +1,51 @@
+name: Generate workflows from upstream
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update_files:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v3
+
+    - name: Checkout upstream repository
+      uses: actions/checkout@v3
+      with:
+        repository: discourse/.github
+        path: upstream
+
+    - name: Install requirements
+      shell: bash
+      run: pip install -r scripts/requirements.txt
+
+    - name: Generate discourse-plugin.yml
+      run: python scripts/generate_discourse_plugin_yml.py upstream/.github/workflows/discourse-plugin.yml .github/workflows/discourse-plugin.yml
+
+    - name: Generate plugin-compacity.yml
+      run: python scripts/generate_plugin_compacity_yml.py upstream/.github/workflows/discourse-plugin.yml .github/workflows/plugin-compacity.yml
+
+    - name: Add commit SHA to generated workflows
+      run: |
+        UPSTREAM_SHA=$(git -C upstream rev-parse HEAD)
+        GENERATOR_SHA=$(git log -1 --pretty=format:"%H" -- scripts/generate_*_yml.py .github/workflows/generate-workflows.yml)
+        MESSAGE="# Generated from https://github.com/discourse/.github/blob/$UPSTREAM_SHA/.github/workflows/discourse-plugin.yml\n# Generator version: $GENERATOR_SHA\n\n"
+        printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat .github/workflows/discourse-plugin.yml)" > .github/workflows/discourse-plugin.yml
+        printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat .github/workflows/plugin-compacity.yml)" > .github/workflows/plugin-compacity.yml
+
+    - name: Clean up before commit
+      run: rm -rf upstream
+
+    - name: Create pull request
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+        commit-message: generate workflows from upstream
+        branch: bot/update-workflows
+        title: Update workflows from upstream
