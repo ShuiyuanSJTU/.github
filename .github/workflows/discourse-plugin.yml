@@ -1,3 +1,6 @@
+# Generated from https://github.com/discourse/.github/blob/d1cf59cdd92fca6ad16fc792f22d447dd9589e01/.github/workflows/discourse-plugin.yml
+# Generator version: 50ba64b0ab7895e894453db3ffa625ead17cae46
+
 name: Discourse Plugin
 
 on:
@@ -26,6 +29,9 @@ concurrency:
   group: discourse-plugin-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
+env:
+  JS_PKG_MANAGER_NULL_VALUE: "none"
+
 jobs:
   linting:
     if: ${{ inputs.linting }}
@@ -36,14 +42,34 @@ jobs:
         with:
           repository: ${{ inputs.repository }}
 
+      - name: Determine JS package manager
+        id: js-pkg-manager
+        run: |
+          if [ -f yarn.lock ]; then
+            echo "Using Yarn"
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+          elif [ -f pnpm-lock.yaml ]; then
+            echo "Using pnpm"
+            echo "manager=pnpm" >> $GITHUB_OUTPUT
+          else
+            echo "No JS package manager detected"
+            echo "manager=${{ env.JS_PKG_MANAGER_NULL_VALUE }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install package manager
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run: npm install -g ${{ steps.js-pkg-manager.outputs.manager }}
+
       - name: Set up Node.js
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: yarn
+          node-version: 22
+          cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
+      - name: Install JS dependencies
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run: ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
@@ -51,38 +77,49 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
-      - name: ESLint
+      - name: Check for .es6 files
         if: ${{ !cancelled() }}
         run: |
-          if test -f .prettierrc.cjs; then
-            yarn eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+          if find . -type f -name '*.js.es6' | grep -q "."; then
+            echo ".js.es6 files are no longer supported by this workflow. Rename them to '.js'"
+            exit 1
+          fi
+
+      - name: ESLint
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: |
+          if test -f eslint.config.mjs; then
+            # modern flat config. No --ext needed
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           else
-            yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+          fi
+
+      - name: Stylelint
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: |
+          if test -f stylelint.config.mjs; then
+            pnpm stylelint --allow-empty-input "assets/**/*.scss"
           fi
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
         run: |
-          yarn prettier -v
-          if [ -n "$(find assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            yarn prettier --list-different "assets/**/*.{scss,js,gjs,es6,hbs}"
+          ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
+          if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
           fi
-          if [ -n "$(find admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            yarn prettier --list-different "admin/assets/**/*.{scss,js,gjs,es6,hbs}"
+          if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
           fi
-          if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.gjs" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
-            yarn prettier --list-different "test/**/*.{js,gjs,es6}"
+          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
           fi
 
       - name: Ember template lint
-        if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
-
-      # Separated due to https://github.com/ember-template-lint/ember-template-lint/issues/2758
-      - name: Ember template lint (admin)
-        if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern admin/assets/javascripts
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
 
       - name: Rubocop
         if: ${{ !cancelled() }}
@@ -121,9 +158,10 @@ jobs:
 
           matrix = []
 
-          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6,gjs}").any?
+          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,gjs}").any?
           matrix << 'backend'
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
+          matrix << 'annotations' if Dir.glob("app/models/**/*.rb").any?
 
           puts "Running jobs: #{matrix.inspect}"
 
@@ -147,6 +185,8 @@ jobs:
       PGPASSWORD: discourse
       PLUGIN_NAME: ${{ inputs.name || github.event.repository.name }}
       CHEAP_SOURCE_MAPS: "1"
+      MINIO_RUNNER_LOG_LEVEL: DEBUG
+      MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
 
     strategy:
       fail-fast: false
@@ -218,7 +258,8 @@ jobs:
 
       - name: Lint English locale
         if: matrix.build_type == 'backend'
-        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/locales/{client,server}.en.yml"
+        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/config/locales/{client,server}.en.yml"
+        continue-on-error: true
 
       - name: Get yarn cache directory
         id: yarn-cache-dir
@@ -325,6 +366,42 @@ jobs:
         if: matrix.build_type == 'system'
         run: bin/ember-cli --build
 
+      - name: Check Annotations
+        if: matrix.build_type == 'annotations'
+        run: |
+          bin/rake annotate:ensure_all_indexes
+          bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
+
+          cd plugins/${{ env.PLUGIN_NAME }}
+
+          if [ ! -z "$(git status --porcelain app/models/)" ]; then
+            echo "Annotations are not up to date. To resolve, run:"
+            echo "  rake annotate"
+            echo
+            echo "Or manually apply the diff printed below:"
+            echo "---------------------------------------------"
+            git -c color.ui=always diff app/models/
+            exit 1
+          fi
+        timeout-minutes: 5
+
+      - name: Add hosts to /etc/hosts, otherwise Chrome cannot reach minio
+        if: matrix.build_type == 'system'
+        run: |
+          echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
+          echo "127.0.0.1 discoursetest.minio.local" | sudo tee -a /etc/hosts
+
+      - name: Minio cache
+        if: matrix.build_type == 'system'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MINIO_RUNNER_INSTALL_DIR }}
+          key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}
+
+      - name: Ensure latest minio binary installed for Core System Tests
+        if: matrix.build_type == 'system'
+        run: bundle exec ruby script/install_minio_binaries.rb
+
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
         env:
@@ -333,7 +410,7 @@ jobs:
         run: bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-screenshots
