@@ -39,7 +39,7 @@ injection_steps = r"""
   run: mkdir -p plugins
 
 - name: Clone plugins
-  uses: discourse/.github/actions/clone-additional-plugins@v1
+  uses: discourse/.github/actions/clone-additional-plugins@b780a606cbe5c865c51016699a1831698e3126ee
   with:
     ssh_private_key: ${{ secrets.ssh_private_key || ''}}
     about_json_path: tmp/plugins.json
@@ -77,6 +77,13 @@ def find_step_by_name(steps, name):
             return step
 def remove_step_by_name(steps, name):
     steps.remove(find_step_by_name(steps, name))
+def insert_step_after(steps, step, after_name):
+    for i, s in enumerate(steps):
+        if 'name' in s and s['name'] == after_name:
+            steps.insert(i + 1, step)
+            return
+    raise ValueError(f"Step with name '{after_name}' not found")
+
 remove_step_by_name(jobs_tests_steps, 'Install plugin')
 remove_step_by_name(jobs_tests_steps, 'Clone additional plugins')
 remove_step_by_name(jobs_tests_steps, 'Validate discourse-compatibility')
@@ -95,6 +102,6 @@ injection_steps = r"""
 
 """
 for step in yaml.load(injection_steps)[::-1]:
-    jobs_tests_steps.insert(3, step) 
+    insert_step_after(jobs_tests_steps, step, 'Setup gems')
 
 yaml.dump(data, target)
