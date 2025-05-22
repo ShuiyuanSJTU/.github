@@ -17,6 +17,9 @@ yaml.indent(mapping=2, sequence=4, offset=2)
 data = yaml.load(source)
 
 data["name"] = "Plugin Compatibility"
+data["jobs"]["check_for_tests"]["runs-on"] = "ubuntu-latest"
+data["jobs"]["tests"]["runs-on"] = "ubuntu-latest"
+data["jobs"]["tests"]["container"] = "discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}"
 
 # override on
 injection = """
