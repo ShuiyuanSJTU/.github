@@ -1,10 +1,15 @@
 #!/bin/bash
 
+set -e
+
 ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-WORKING_DIR=$ROOT_DIR/tmp
+WORKING_DIR=$ROOT_DIR/tmp_$RANDOM
 UPSTREAM_DIR=$WORKING_DIR/upstream
 
 mkdir -p $WORKING_DIR
+
+python -m venv $WORKING_DIR/venv
+source $WORKING_DIR/venv/bin/activate
 
 git clone https://github.com/discourse/.github.git $UPSTREAM_DIR
 
@@ -20,4 +25,5 @@ MESSAGE="# Generated from https://github.com/discourse/.github/blob/$UPSTREAM_SH
 printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat $ROOT_DIR/.github/workflows/discourse-plugin.yml)" > $ROOT_DIR/.github/workflows/discourse-plugin.yml
 printf "%s\n\n%s" "$(echo -e $MESSAGE)" "$(cat $ROOT_DIR/.github/workflows/plugin-compatibility.yml)" > $ROOT_DIR/.github/workflows/plugin-compatibility.yml
 
+deactivate
 rm -rf $WORKING_DIR
