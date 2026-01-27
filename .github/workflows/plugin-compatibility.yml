@@ -1,4 +1,4 @@
-# Generated from https://github.com/discourse/.github/blob/cc6144ad8320b6a963f3a2469c0b236c52e5f1a3/.github/workflows/discourse-plugin.yml
+# Generated from https://github.com/discourse/.github/blob/65d5843206d0d17c2cf4ba9b620dfdd91a443704/.github/workflows/discourse-plugin.yml
 # Generator version: 2dc3133e6c564995917a4cf63448b668600557e5
 
 name: Plugin Compatibility
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: discourse-plugin-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
+  group: discourse-plugin-${{ format('{0}-{1}-{2}', github.ref_name, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
 env:

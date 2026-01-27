@@ -1,4 +1,4 @@
-# Generated from https://github.com/discourse/.github/blob/cc6144ad8320b6a963f3a2469c0b236c52e5f1a3/.github/workflows/discourse-plugin.yml
+# Generated from https://github.com/discourse/.github/blob/65d5843206d0d17c2cf4ba9b620dfdd91a443704/.github/workflows/discourse-plugin.yml
 # Generator version: 2dc3133e6c564995917a4cf63448b668600557e5
 
 name: Discourse Plugin
@@ -34,7 +34,7 @@ on:
         required: false
 
 concurrency:
-  group: discourse-plugin-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
+  group: discourse-plugin-${{ format('{0}-{1}-{2}', github.ref_name, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
 env:
@@ -87,7 +87,9 @@ jobs:
       - name: ESLint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
-          if test -f eslint.config.mjs; then
+          if grep -q 'lint:js' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:js
+          elif test -f eslint.config.mjs; then
             # modern flat config. No --ext needed
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           else
@@ -97,7 +99,9 @@ jobs:
       - name: Stylelint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
-          if test -f stylelint.config.mjs; then
+          if grep -q 'lint:css' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:css
+          elif test -f stylelint.config.mjs; then
             pnpm stylelint --allow-empty-input "assets/**/*.scss"
           fi
 
@@ -105,19 +109,36 @@ jobs:
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
-          if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
-          fi
-          if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
-          fi
-          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+
+          if grep -q 'lint:prettier' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:prettier
+          else
+            if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
+            fi
+            if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
+            fi
+            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+            fi
           fi
 
       - name: Ember template lint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
-        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
+        run: |
+          if grep -q 'lint:hbs' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:hbs
+          else
+            ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
+          fi
+
+      - name: Types
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: |
+          if test -f tsconfig.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:types
+          fi
 
       - name: Rubocop
         if: ${{ !cancelled() }}
